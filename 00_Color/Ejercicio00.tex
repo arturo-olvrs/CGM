@@ -1,0 +1,32 @@
+\documentclass[12pt]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage[margin=2.5cm]{geometry}
+
+\title{Computer Graphics\\Exercise 00: Color}
+\author{Arturo Olivares Martos}
+\date{\today}
+
+% --- Cuerpo del Documento ---
+\begin{document}
+
+\maketitle
+
+\textbf{What is the advantage of using HSV or HSL representations instead of RGB? And in what typical applications are these color models used?}\\
+
+These two models follow a different approach to represent colors. While RGB is based on the combination of Red, Green, and Blue light, HSV (Hue, Saturation, Value) and HSL (Hue, Saturation, Lightness) are designed to be more intuitive for human perception. The main advantages of using HSV or HSL over RGB are:
+\begin{enumerate}
+    \item \textbf{Human Intuition:} Adjusting brightness or intensity in HSV involves changing a single variable ($V$ or $L$), whereas in RGB, all three components must be scaled proportionally.
+    \item \textbf{Lighting Invariance:} In computer vision, HSV is more robust to changes in lighting. A ``blue'' object will maintain a similar Hue value even if the brightness ($V$) changes due to shadows.
+\end{enumerate}
+
+The most common applications of HSV and HSL include:
+\begin{itemize}
+    \item \underline{Object Tracking:} HSV is often used in computer vision for tracking objects based on color, as it allows for easier segmentation under varying lighting conditions.
+    \item \underline{Graphic Design:} Used in color wheels to create aesthetically pleasing gradients and palettes. The color selection is more intuitive when adjusting hue and saturation rather than RGB values.
+    \item \underline{Photo Editing:} Plenty of photo editing software uses HSL for color adjustments, allowing users to modify the lightness and saturation without affecting the hue, which is more intuitive for artistic purposes.
+\end{itemize}
+
+
+\end{document}

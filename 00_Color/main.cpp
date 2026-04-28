@@ -1,6 +1,44 @@
 #include <GLApp.h>
 #include <FontRenderer.h>
 
+Vec3 hsvToRgb(Vec3 hsv) {
+  double h = hsv[0]; // Hue
+  double s = hsv[1]; // Saturation
+  double v = hsv[2]; // Value
+
+  Vec3 rgb;
+
+  // Saturation 0 means a shade of gray
+  if (s <= 0.0) {
+      rgb.r = rgb.g = rgb.b = v;
+      return rgb;
+  }
+
+  // Normalization of Hue to 60-degree sectors
+  if (h >= 360.0) h = 0.0;
+  h /= 60.0;
+
+  int i = static_cast<int>(std::floor(h));  // Sector index
+  double f = h - i;   // Fractional part of hue sector
+
+  // Intermediate values for RGB calculation
+  double p = v * (1.0 - s);
+  double q = v * (1.0 - (s * f));
+  double t = v * (1.0 - (s * (1.0 - f)));
+
+  // Mapping of sectors to RGB channels
+  switch (i) {
+      case 0: rgb.r = v; rgb.g = t; rgb.b = p; break;
+      case 1: rgb.r = q; rgb.g = v; rgb.b = p; break;
+      case 2: rgb.r = p; rgb.g = v; rgb.b = t; break;
+      case 3: rgb.r = p; rgb.g = q; rgb.b = v; break;
+      case 4: rgb.r = t; rgb.g = p; rgb.b = v; break;
+      default: rgb.r = v; rgb.g = p; rgb.b = q; break;
+  }
+
+  return rgb;
+}
+
 class MyGLApp : public GLApp {
 public:
   Image image{640,480};
@@ -11,11 +49,8 @@ public:
   MyGLApp() : GLApp{800,800,1,"Color Picker"} {}
 
   Vec3 convertPosFromHSVToRGB(float h, float s) {
-    // TODO:
-    // enter code here that interprets the mouse's
-    // x, y position as H ans S (I suggest to set
-    // V to 1.0) and converts that tripple to RGB
-    return Vec3{h,s,1.0f};
+    
+    return hsvToRgb(Vec3{h*360.0f, s, 1.0f});
   }
   
   virtual void init() override {

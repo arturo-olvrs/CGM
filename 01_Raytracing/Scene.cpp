@@ -78,7 +78,54 @@ Vec3 Scene::traceRay(const Ray& ray, float IOR, int recDepth) const {
     }
   }
 
-  return localColor;
+  Vec3 reflectedColor{ 0.0f, 0.0f, 0.0f };
+  if (inter.getMaterial().reflects() && recDepth > 0) {
+    Ray reflectedRay{ offSurfacePos, Vec3::reflect(ray.getDirection(), inter.getNormal()) };
+    reflectedColor = traceRay(reflectedRay, IOR, recDepth - 1);
+    // TODO: Qué IOR enviar
+  }
+
+  Vec3 refractedColor{ 0.0f, 0.0f, 0.0f };
+  if (inter.getMaterial().refracts() && recDepth > 0) {
+    // TODO: Qué IOR enviar? El de la escena o el del material?
+    std::optional<Vec3> refractedDir = Vec3::refract(ray.getDirection(), inter.getNormal(), inter.getMaterial().getIndexOfRefraction().value());
+    if (refractedDir.has_value()) {
+      Ray refractedRay{ offSurfacePos, refractedDir.value() };
+      refractedColor = traceRay(refractedRay, inter.getMaterial().getIndexOfRefraction().value(), recDepth - 1);
+      // TODO: Qué IOR enviar?
+    }
+  }
+
+  float localWeight, reflectedWeight, refractedWeight;
+  
+  if (inter.getMaterial().reflects() && !inter.getMaterial().refracts()) {
+    float R_0 = 1-inter.getMaterial().getLocalRefectivity();
+    float cosTheta = Vec3::dot(ray.getDirection(), inter.getNormal());
+    float Rtheta = R_0 + (1 - R_0) * pow(1 - cosTheta, 5);
+
+    reflectedWeight = Rtheta;
+    localWeight = 1 - reflectedWeight;
+    refractedWeight = 0.0f;
+  } else if (inter.getMaterial().reflects() && inter.getMaterial().refracts()) {
+    float n = inter.getMaterial().getIndexOfRefraction().value() / IOR;
+    float R_0 = pow((n - 1) / (n + 1), 2);
+    float cosTheta = Vec3::dot(ray.getDirection(), inter.getNormal());
+    float Rtheta = R_0 + (1 - R_0) * pow(1 - cosTheta, 5);
+    float Ttheta = 1 - Rtheta;
+
+    // TODO: Poner bien estos valores
+    localWeight = 1.0f;
+    reflectedWeight = 1.0f;
+    refractedWeight = 1.0f;
+  } else {
+    localWeight = 1.0f;
+    reflectedWeight = 0.0f;
+    refractedWeight = 0.0f;
+  }
+
+
+
+  return localColor * localWeight + reflectedColor * reflectedWeight + refractedColor * refractedWeight;
 }
 
 Scene Scene::genSimpleScene() {

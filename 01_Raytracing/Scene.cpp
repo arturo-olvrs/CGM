@@ -42,8 +42,10 @@ std::optional<Intersection> Scene::intersect(const Ray& ray, bool shadowRay) con
 /// <param name="recDepth">recursion depth</param>
 /// <returns>final color value computed for this ray</returns>
 Vec3 Scene::traceRay(const Ray& ray, float IOR, int recDepth) const {
-  // TODO: implement the missing parts of this method according to the exercise
-
+  
+  if (recDepth == 0)
+		return backgroundColor;
+  
   // no intersection found
   std::optional<Intersection> opt_intersection = intersect(ray, false);
   if (!opt_intersection.has_value())
@@ -53,6 +55,7 @@ Vec3 Scene::traceRay(const Ray& ray, float IOR, int recDepth) const {
   Intersection inter = opt_intersection.value();
   Vec3 interPos = ray.getPosOnRay(inter.getT());
   Vec3 offSurfacePos = interPos + inter.getNormal() * OFFSET_EPSILON;
+  Vec3 inSurfacePos = interPos + inter.getNormal() * -OFFSET_EPSILON;
 
 
   Vec3 localColor{ 0.0f, 0.0f, 0.0f };
@@ -78,54 +81,85 @@ Vec3 Scene::traceRay(const Ray& ray, float IOR, int recDepth) const {
     }
   }
 
+
+  // Firstly decide if it is entering or exiting the material
+  float dotDN = Vec3::dot(ray.getDirection(), inter.getNormal());
+  bool rayEntering = dotDN < 0;
+  float materialIOR = inter.getMaterial().getIndexOfRefraction().value_or(1.0f);
+  float IOR_from = IOR;
+  float IOR_to = rayEntering ? materialIOR : 1.0f; // Assume: When the ray is exiting the material, it is going to air with IOR = 1.0f
+  
+  // When doing reflexion, if entering then offSurfacePos else inSurfacePos
+  Vec3 difSurfacePos = rayEntering ? offSurfacePos : inSurfacePos;
+
+  // Calculating Reflected Color
   Vec3 reflectedColor{ 0.0f, 0.0f, 0.0f };
-  if (inter.getMaterial().reflects() && recDepth > 0) {
-    Ray reflectedRay{ offSurfacePos, Vec3::reflect(ray.getDirection(), inter.getNormal()) };
+  if (inter.getMaterial().reflects()) {
+    Ray reflectedRay{ difSurfacePos, Vec3::reflect(ray.getDirection(), inter.getNormal()) };
+    // Since the medium does not change when reflecting, we keep the same IOR for the reflected ray
     reflectedColor = traceRay(reflectedRay, IOR, recDepth - 1);
-    // TODO: Qué IOR enviar
   }
 
+  // Calculating Refracted Color
+
+  // When doing refraction, if entering then inSurfacePos else offSurfacePos
+  difSurfacePos = rayEntering ? inSurfacePos : offSurfacePos; // When refracting, if entering then inSurfacePos else offSurfacePos, since we want to make sure the refracted ray starts in the medium it is going into to avoid numerical issues with intersecting with the same surface again immediately
+
+  
   Vec3 refractedColor{ 0.0f, 0.0f, 0.0f };
-  if (inter.getMaterial().refracts() && recDepth > 0) {
-    // TODO: Qué IOR enviar? El de la escena o el del material?
-    std::optional<Vec3> refractedDir = Vec3::refract(ray.getDirection(), inter.getNormal(), inter.getMaterial().getIndexOfRefraction().value());
+  if (inter.getMaterial().refracts()) {
+    // Since the refract function detects if we are entering or exiting
+    // based on the sign of the dot product,
+    // Only the materialIOR of the intersection medium needs to be passed to it
+    std::optional<Vec3> refractedDir = Vec3::refract(ray.getDirection(), inter.getNormal(), materialIOR);
+
     if (refractedDir.has_value()) {
-      Ray refractedRay{ offSurfacePos, refractedDir.value() };
-      refractedColor = traceRay(refractedRay, inter.getMaterial().getIndexOfRefraction().value(), recDepth - 1);
-      // TODO: Qué IOR enviar?
+      Ray refractedRay{ difSurfacePos, refractedDir.value() };
+      // Since we are changing medium when refracting, we need to update the IOR for the refracted ray
+      refractedColor = traceRay(refractedRay, IOR_to, recDepth - 1);
+    }else{
+      std::cout << "Total internal reflection occurred. No refraction possible." << std::endl;
     }
   }
 
+
+  // Calculating the weights using Schlick's approximation of the Fresnel equations
   float localWeight, reflectedWeight, refractedWeight;
+  float local = inter.getMaterial().getLocalRefectivity();
   
+  Vec3 IncomingDir = ray.getDirection() * -1.0f;  // To calculate the angle between the incoming ray and the normal, we need the incoming direction vector pointing towards the surface
+  Vec3 N = rayEntering ? inter.getNormal() : inter.getNormal() * -1.0f; // We need the normal to point against the incoming ray for the calculations, if the ray is exiting the material we need to invert the normal
+  float cosTheta = Vec3::dot(IncomingDir, N);
+  cosTheta = std::clamp(cosTheta, 0.0f, 1.0f); // Clamp cosTheta to the range [0, 1] to avoid numerical issues
+
   if (inter.getMaterial().reflects() && !inter.getMaterial().refracts()) {
-    float R_0 = 1-inter.getMaterial().getLocalRefectivity();
-    float cosTheta = Vec3::dot(ray.getDirection(), inter.getNormal());
-    float Rtheta = R_0 + (1 - R_0) * pow(1 - cosTheta, 5);
+    float R_0 = 1.0f - local;
+    float Rtheta = R_0 + (1.0f - R_0) * std::pow(1.0f - cosTheta, 5);
 
     reflectedWeight = Rtheta;
-    localWeight = 1 - reflectedWeight;
+    localWeight = 1.0f - reflectedWeight;
     refractedWeight = 0.0f;
-  } else if (inter.getMaterial().reflects() && inter.getMaterial().refracts()) {
-    float n = inter.getMaterial().getIndexOfRefraction().value() / IOR;
-    float R_0 = pow((n - 1) / (n + 1), 2);
-    float cosTheta = Vec3::dot(ray.getDirection(), inter.getNormal());
-    float Rtheta = R_0 + (1 - R_0) * pow(1 - cosTheta, 5);
-    float Ttheta = 1 - Rtheta;
+  }
+  else if (inter.getMaterial().reflects() && inter.getMaterial().refracts()) {
 
-    // TODO: Poner bien estos valores
-    localWeight = 1.0f;
-    reflectedWeight = 1.0f;
-    refractedWeight = 1.0f;
-  } else {
+    float R_0 = pow((IOR_from - IOR_to) / (IOR_from + IOR_to), 2);
+    float Rtheta = R_0 + (1.0f - R_0) * std::pow(1.0f - cosTheta, 5);
+    float Ttheta = 1.0f - Rtheta;
+    
+    localWeight = local;
+    float remainingWeight = 1.0f - localWeight;
+
+    reflectedWeight = remainingWeight * Rtheta;
+    refractedWeight = remainingWeight * Ttheta;
+  } 
+  else {
     localWeight = 1.0f;
     reflectedWeight = 0.0f;
     refractedWeight = 0.0f;
   }
 
-
-
   return localColor * localWeight + reflectedColor * reflectedWeight + refractedColor * refractedWeight;
+  
 }
 
 Scene Scene::genSimpleScene() {

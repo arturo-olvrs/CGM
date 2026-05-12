@@ -13,7 +13,7 @@ public:
     
   virtual void init() {
     GL(glDisable(GL_CULL_FACE));
-    render(Scene::genSimpleScene(), 9);
+    render(Scene::genSimpleScene(), 7);
   }
 
   void render(Scene scene, int depth) {
@@ -24,7 +24,7 @@ public:
       // instantiates the actual renderer with recursion depth 9 and 9x super sampling
       // NOTE: you might want to reduce the super sampling to 1 for testing and debugging
       Raytracer renderer(depth, 1);
-      // TODO: Devolver a 9
+      // TODO: Set back to 9
       renderer.setCamera(camera);
       renderer.setScene(scene);
       renderer.render(image);

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include "Image.h"
 #include "Vec3.h"
 #include "TextureCoordinates.h"

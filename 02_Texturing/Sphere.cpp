@@ -55,5 +55,21 @@ std::optional<Intersection> Sphere::intersect(const Ray& ray) const {
   // Then compute the normalized texture coordinates u,v.
   // In a last step scale and offset the coordinates by the given values.
 
-  return Intersection{material, normal, {}, t };
+  Mat3 rotMat = Mat3::rotationZ(rotation.z) * 
+                Mat3::rotationY(rotation.y) * 
+                Mat3::rotationX(rotation.x);
+  r = rotMat * r;
+
+  // Conversion from (x,y,z) to spherical coordinates 
+  float phi = atan2(r.y, r.x);  // range [-pi, pi]
+  float theta = acos(r.z); // range [0, pi]
+
+  // Convert spherical coordinates to texture coordinates in range [0, 1]
+  float u = (phi + M_PI) / (2 * M_PI);  // range [0, 1]
+  float v = theta / M_PI;  // range [0, 1]  
+
+  u = u * scale.u + bias.u;
+  v = v * scale.v + bias.v;
+
+  return Intersection{material, normal, TextureCoordinates(u, v), t };
 }

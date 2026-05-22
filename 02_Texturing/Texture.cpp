@@ -88,8 +88,6 @@ static uint32_t handleBorderCoordinate(int pixelCoord, uint32_t max,
   // TODO Task03: Implement the missing bordermodes CLAMP_TO_BORDER, CLAMP_TO_EDGE, MIRRORED_REPEAT.
   // The texel index range is [0; max - 1]
 
-  // TODO: How to check?
-
   switch (bordermode) {
     case BorderMode::CLAMP_TO_EDGE:{
       if (pixelCoord < 0) {
@@ -136,7 +134,6 @@ static uint32_t handleBorderCoordinate(int pixelCoord, uint32_t max,
 
 Vec3 Texture::sample(int pixelCoordX, int pixelCoordY) const {
   // TODO Task03: Implement the missing bordermodes CLAMP_TO_BORDER, CLAMP_TO_EDGE, MIRRORED_REPEAT
-  // TODO: Qué hay que hacer? Solo eso?
 
   const uint32_t sampleCoordX = handleBorderCoordinate(pixelCoordX, width, borderModeU);
   const uint32_t sampleCoordY = handleBorderCoordinate(pixelCoordY, height, borderModeV);
@@ -162,7 +159,6 @@ Vec3 Texture::sample(const TextureCoordinates& texCoords) const {
     }
     case FilterMode::BILINEAR: {
       // TODO Task03: Implement sampling using Bilinear Filtering
-      // TODO: Cómo corregir?
       const int x1 = static_cast<int>(std::floor(dx));
       const int y1 = static_cast<int>(std::floor(dy));
       const int x2 = x1 + 1;

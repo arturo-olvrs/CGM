@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <iostream>
 
 namespace {
 
@@ -30,7 +31,14 @@ Vec3 transformDirection(const Mat4& matrix, const Vec3& direction) {
 	//
 	// The returned direction will later be used as the next ray direction of the
 	// path. Averaging many such paths approximates the diffuse lighting integral.
-	return normal;
+
+	Vec3 outgoing = Vec3::randomUnitVector();
+	outgoing = outgoing + normal;
+	if (outgoing.length() < 0.000001f)
+		outgoing = normal;
+
+
+	return Vec3::normalize(outgoing);
 }
 
 [[maybe_unused]] Vec3 offsetRayOrigin(const Vec3& position, const Vec3& normal, const Vec3& direction) {
@@ -159,20 +167,31 @@ Vec3 Scene::traceLocalPath(const Ray& firstRay, int maxDepth) const {
 		// TODO: Trace one path bounce.
 		//
 		// 1. Intersect the current ray with the scene, just as in the raytracer.
+		std::optional<Intersection> inter = intersect(ray);
 		//
 		// 2. If the ray misses all objects, it has reached the environment light.
 		//    Return the environment color multiplied by the accumulated throughput:
+		//    		throughput * environmentColor(transformDirection(model, ray.getDirection())).
+		if (!inter.has_value())
+			return throughput * environmentColor(transformDirection(model, ray.getDirection()));
 		//
-		//       return throughput * environmentColor(transformDirection(model, ray.getDirection()));
-		//
+		//       
 		// 3. If the ray hits an object, compute the hit position, normal, and
 		//    material. In this simplified renderer, a material either emits light
 		//    or scatters the path, but not both. If material.emits() is true, the
 		//    path has hit light-source geometry. Return
 		//    throughput * material.getEmission().
+
+		const Vec3 hitPos = ray.getPosOnRay(inter->getT());
+		const Vec3 normal = inter->getNormal();
+		const Material material = inter->getMaterial();
+		
+		if (material.emits())
+			return throughput * material.getEmission();
 		//
 		// 4. Otherwise, the material scatters the path. Compute the next ray
 		//    direction.
+		Vec3 nextDirection;
 		//
 		// 5. For refractive materials, reuse the refraction code from the texturing
 		//    raytracer:
@@ -182,22 +201,50 @@ Vec3 Scene::traceLocalPath(const Ray& firstRay, int maxDepth) const {
 		//        refraction for this one path
 		//      - if refraction fails, use reflection
 		//      - multiply throughput by material.getSpecular()
+		if (material.refracts())
+		{
+			const float reflectivity = material.getReflectivity(Vec3::dot(ray.getDirection(), normal));
+			const std::optional<Vec3> refracted = Vec3::refract(ray.getDirection(), normal, material.getIndexOfRefraction().value());
+
+			// !refracted is true if refraction failed due to TIR
+			if (!refracted || staticRand.rand01() < reflectivity)
+				nextDirection = Vec3::reflect(ray.getDirection(), normal);
+			else
+				nextDirection = refracted.value();
+				
+			throughput = throughput * material.getSpecular();
+		}
 		//
 		// 6. For mirror materials, reuse Vec3::reflect(...) from the raytracer and
 		//    multiply throughput by material.getSpecular().
+		else if (material.reflects())
+		{
+			nextDirection = Vec3::reflect(ray.getDirection(), normal);
+			throughput = throughput * material.getSpecular();
+		}
 		//
 		// 7. For diffuse materials, call sampleDiffuseDirection(...). Multiply the
 		//    throughput by getAlbedo(inter). This replaces the old Phong light loop:
 		//    instead of evaluating all lights at this surface, the path randomly
 		//    continues and gathers light when it eventually reaches the environment
 		//    or an emissive object.
+		else
+		{
+			bool isEntering = Vec3::dot(ray.getDirection(), normal) < 0.0f;
+			Vec3 orientedNormal = isEntering ? normal : -1.0f * normal;
+			nextDirection = sampleDiffuseDirection(orientedNormal);
+			throughput = throughput * getAlbedo(inter.value());
+		}
 		//
 		// 8. Normalize the next direction and continue the path with a new ray from
 		//    offsetRayOrigin(...), so the new ray does not immediately hit the same
 		//    surface again.
+		nextDirection = Vec3::normalize(nextDirection);
+		const Vec3 nextOrigin = offsetRayOrigin(hitPos, normal, nextDirection);
+		ray = Ray{nextOrigin, nextDirection};
 	}
 
-
+	std::cerr << "Path terminated after reaching max depth of " << maxDepth << " without hitting the environment." << std::endl;
 	return Vec3{0.0f, 0.0f, 0.0f};
 }
 

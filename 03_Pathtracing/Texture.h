@@ -3,6 +3,7 @@
 #include "Image.h"
 #include "Vec3.h"
 #include "TextureCoordinates.h"
+#include <memory>
 
 enum class FilterMode {
 	NEAREST, BILINEAR

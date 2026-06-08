@@ -1,0 +1,26 @@
+\documentclass[12pt]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage[margin=2.5cm]{geometry}
+
+\title{Computer Graphics\\Exercise 03: Pathtracing}
+\author{Arturo Olivares Martos}
+\date{\today}
+
+% --- Cuerpo del Documento ---
+\begin{document}
+
+\maketitle
+
+Use the reference solution to compare the two scenes. Press \texttt{S} to switch between them and watch both the runtime behavior and the noise over multiple samples. Answer the following questions in a few sentences.\\
+
+\textbf{Why is the first scene faster per ray than the Cornell box scene? Think about the number of objects, the typical number of bounces, and how often a ray quickly leaves the scene.}
+
+The first scene is faster per ray than the Cornell box scene because, even though the number of objects is similar, the first scene is not closed and therefore rays can quickly leave the scene (and thus terminate) after a few bounces. In contrast, the Cornell box is a closed environment where rays are more likely to bounce multiple times before exiting, which increases the computational cost per ray.\\
+
+\textbf{Why does the first scene converge faster? After about 200 samples per pixel the noise is almost gone, while the Cornell box still needs many more samples. Think about environment lighting, closed geometry, indirect bounces, and the probability that a random path actually reaches a light source.}
+
+Since the first scene does not have any light source, the only way for a ray to contribute (to not return black) is to hit the environment, which is a large area light source, as the scene is not closed. This means that a random path has a high probability of actively contributing to the final image, leading to faster convergence. In contrast, the Cornell box is a closed geometry where rays must bounce multiple times and have a lower probability of reaching the light source directly, resulting in a lot of paths bouncing until the maximum depth is reached, therefore returning black and contributing to the noise, which slows down convergence.
+
+\end{document}

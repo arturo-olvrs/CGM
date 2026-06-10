@@ -44,6 +44,7 @@ vec4 tracePrimaryRay(vec3 rayStart, vec3 rayDirection) {
   vec3 delta = rayDirection * stepLength;
 
   vec3 currentPoint = rayStart;
+  vec4 accColor = vec4(0.0);
 
   // TODO: Implement the ray marching loop:
   // 1. sample the volume at currentPoint
@@ -51,7 +52,17 @@ vec4 tracePrimaryRay(vec3 rayStart, vec3 rayDirection) {
   // 3. correct opacity for the number of samples
   // 4. composite front-to-back with under()
   // 5. advance currentPoint by delta
-  return vec4(0.0);
+
+  for (int i = 0; i < sampleCount; ++i) {
+    float sampleVolume = texture(volume, currentPoint).r;
+    vec4 color = transferFunction(sampleVolume);
+    color.a = 1.0 - pow(1.0 - color.a, opacityCorrection);
+    accColor = under(color, accColor);
+    if (accColor.a >= 0.95)   // Early ray termination if opacity is almost opaque
+      break;
+    currentPoint += delta;
+  }
+  return accColor;
 }
 
 void main() {

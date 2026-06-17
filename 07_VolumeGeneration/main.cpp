@@ -87,7 +87,13 @@ public:
     const auto addParameterSet = [this](const RescaleAndAddVolumeParameters& parameters) {
       parameterSets.emplace_back(parameters);
     };
+    // Personal Parameter Sets 
+    addParameterSet({384, 160, 256, Vec3{1.0f, 1.0f, 1.0f},
+                 7777, 8, 1.75f, 2.15f, 0.48f, true,
+                 0.42f, 1.10f, -0.05f, 1.6f,
+                 0.65f, 0.28f, 2.1f, 0.45f, 0.40f, false});
 
+    // Default Parameter Sets
     addParameterSet({384, 160, 256, Vec3{1.0f, 1.0f, 1.0f},
                      1337, 9, 2.1f, 2.0f, 0.54f, true,
                      0.38f, 0.75f, 0.0f, 1.15f,

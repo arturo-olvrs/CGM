@@ -35,6 +35,34 @@ void RescaleAndAddVolume::generate(const RescaleAndAddVolumeParameters& paramete
   // 5. Use parameters.coverage, densityExponent, densityScale, and densityOffset
   //    to shape the final density.
   // 6. Store the clamped density as an 8-bit value in volume.data.
+  float invWidth = volume.width > 1 ? 1.0f / float(volume.width - 1) : 1.0f;
+  float invHeight = volume.height > 1 ? 1.0f / float(volume.height - 1) : 1.0f;
+  float invDepth = volume.depth > 1 ? 1.0f / float(volume.depth - 1) : 1.0f;
+
+  for (size_t w = 0; w < volume.depth; ++w) {
+    float z = float(w) * invDepth;
+    for (size_t v = 0; v < volume.height; ++v) {
+      float y = float(v) * invHeight;
+      for (size_t u = 0; u < volume.width; ++u) {
+        float x = float(u) * invWidth;
+
+        float noise = fractalNoise(x, y, z);    // H
+        float envelope = cloudEnvelope(x, y, z);    // E
+
+        float perlinSample = perlin(x * volume.scale.x, y * volume.scale.y, z * volume.scale.z);
+        float detail = perlinSample * 0.5f + 0.5f;  // d // Remap from [-1, 1] to [0, 1].
+
+        float erosion = 1.0f - parameters.detailErosion*(1.0f - detail);   // e_detail
+        float shapedNoise = noise * (0.2f + 0.8f * envelope) * erosion;     // s
+        float cloudShape = smoothStep(parameters.coverage, 1.0f, shapedNoise);  // c
+        
+        float aux = pow(cloudShape, parameters.densityExponent) * parameters.densityScale + parameters.densityOffset;
+        float density = std::clamp(aux, 0.0f, 1.0f) * envelope;
+        density = std::round(density * 255.0f);
+        volume.data[u + v * volume.width + w * volume.width * volume.height] = uint8_t(density);
+      }
+    }
+  }
 
   if (parameters.computeNormals) {
     volume.computeNormals();
@@ -73,7 +101,36 @@ float RescaleAndAddVolume::fractalNoise(const float x, const float y, const floa
   //   with 1 - abs(octaveValue); otherwise remap Perlin from [-1, 1] to [0, 1].
   // - Accumulate octaveValue * amplitude and normalize by the sum of amplitudes.
   // - Multiply amplitude by parameters.roughness and frequency by parameters.lacunarity.
-  return 0.0f;
+
+  float currentFrequency = parameters.baseFrequency;
+  float currentAmplitude = 1.0f;
+
+  float noiseValue = 0.0f;
+  float amplitudeSum = 0.0f;
+
+  for (size_t i = 0; i < parameters.octaves; ++i) {
+    float octaveValue = perlin(x * currentFrequency, y * currentFrequency, z * currentFrequency);
+    if (parameters.billowyNoise) {
+      octaveValue = 1.0f - std::abs(octaveValue);
+    } else {  // Remap from [-1, 1] to [0, 1].
+      octaveValue = octaveValue * 0.5f + 0.5f;
+    }
+
+    // Accumulate the weighted octave value and update the amplitude sum.
+    noiseValue += octaveValue * currentAmplitude;
+    amplitudeSum += currentAmplitude;
+
+    // Update amplitude and frequency for the next octave.
+    currentAmplitude *= parameters.roughness;
+    currentFrequency *= parameters.lacunarity;
+  }
+  
+  if (amplitudeSum > 0.0f) {
+    noiseValue /= amplitudeSum;
+  } else {
+    noiseValue = 0.0f;
+  }
+  return noiseValue;
 }
 
 float RescaleAndAddVolume::perlin(const float inputX, const float inputY, const float inputZ) const {
@@ -137,7 +194,30 @@ float RescaleAndAddVolume::cloudEnvelope(const float x, const float y, const flo
   // - Measure the distance from the center of the volume.
   // - Use parameters.radius, silhouetteNoiseStrength, and envelopeSoftness to
   //   return a smooth spherical falloff in [0, 1].
-  return 1.0f;
+
+  // Center of [0,1]^3 is at (0.5, 0.5, 0.5).
+  float centerX = 0.5f;
+  float centerY = 0.5f;
+  float centerZ = 0.5f;
+
+  float dx = x - centerX;
+  float dy = y - centerY;
+  float dz = z - centerZ;
+
+  float distanceFromCenter = std::sqrt(dx * dx + dy * dy + dz * dz);
+
+  float fs = parameters.silhouetteNoiseFrequency;
+  // TODO: Why those magic offsets? We want to sample a different point in the noise field for each coordinate, but why those specific values?
+  float noiseSample = perlin(fs * (x + 12.5f), fs * (y + 23.5f), fs * (z + 34.5f));
+
+  float q = 0.5f  * noiseSample + 0.5f;  // Remap from [-1, 1] to [0, 1].
+  
+  float ss = parameters.silhouetteNoiseStrength;
+  float radiusScale = 1.0f - 0.5f * ss + q * ss;
+  float R_local = parameters.radius * radiusScale;
+
+  // E(x, y, z) = 1 - smoothStep(R_local - epsilon, R_local, distance)
+  return 1.0f - smoothStep(R_local - parameters.envelopeSoftness, R_local, distanceFromCenter);
 }
 
 int RescaleAndAddVolume::perm(const int index) const {

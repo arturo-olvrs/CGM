@@ -56,7 +56,15 @@ float traceShadowRay(vec3 rayStart, vec3 rayDirection) {
   // 4. accumulate optical depth weighted by stepLength
   // 5. advance currentPoint by delta
 
-  return 1.0;
+  float opticalDepth = 0.0;
+  for (int i = 0; i < sampleCount; ++i) {
+    float volumeValue = texture(volume, currentPoint).r;
+    vec4 current = transferFunction(volumeValue);
+    opticalDepth += current.a * stepLength;
+    currentPoint += delta;
+  }
+
+  return exp(-shadowDensityScale * opticalDepth);
 }
 
 vec3 estimateLighting(vec3 position, float alpha) {

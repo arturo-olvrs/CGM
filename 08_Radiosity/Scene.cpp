@@ -191,7 +191,7 @@ std::optional<Intersection> Scene::intersect(const Ray& ray) const {
 std::vector<RadiosityPatch> Scene::createPatches() const {
 	std::vector<RadiosityPatch> patches;
 
-	// TODO: Convert the tessellated scene objects into radiosity patches.
+	// DONE: Convert the tessellated scene objects into radiosity patches.
 	//
 	// For every object in sceneObjects:
 	// 1. Request its mesh with object->getMesh().unpack().
@@ -203,6 +203,32 @@ std::vector<RadiosityPatch> Scene::createPatches() const {
 	// 7. Copy reflectance and emission from the object's material.
 	// 8. Initialize patch.radiosity with patch.emission.
 	// 9. Add only non-degenerate patches, i.e. patches with area > 0.
+
+	for (const std::shared_ptr<const IntersectableObject>& object : sceneObjects) {
+		const Tessellation mesh = object->getMesh().unpack();
+
+		const std::vector<float>& vertices = mesh.getVertices();
+		for (size_t i = 0; i < vertices.size(); i += 3*3){
+			RadiosityPatch patch;
+
+			patch.a = Vec3{vertices[i + 0], vertices[i + 1], vertices[i + 2]};
+			patch.b = Vec3{vertices[i + 3], vertices[i + 4], vertices[i + 5]};
+			patch.c = Vec3{vertices[i + 6], vertices[i + 7], vertices[i + 8]};
+
+			patch.center = (patch.a + patch.b + patch.c) / 3.0f;
+			patch.normal = triangleNormal(patch.a, patch.b, patch.c);
+			patch.area = triangleArea(patch.a, patch.b, patch.c);
+
+			if (patch.area <= 0.0f)
+				continue;
+
+			patch.reflectance = object->getMaterial().getReflectance();
+			patch.emission = object->getMaterial().getEmission();
+			patch.radiosity = patch.emission;
+
+			patches.push_back(patch);			
+		}
+	}
 
 	return patches;
 }

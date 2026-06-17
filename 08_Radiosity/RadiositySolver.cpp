@@ -22,7 +22,7 @@ float formFactorEstimate(const RadiosityPatch& receiver, const RadiosityPatch& e
 	(void)emitter;
 	(void)pi;
 
-	// TODO: Implement the center-to-center form-factor approximation.
+	// DONE: Implement the center-to-center form-factor approximation.
 	//
 	// F_ij ~= A_j cos(theta_i) cos(theta_j) / (pi r^2)
 	//
@@ -34,7 +34,23 @@ float formFactorEstimate(const RadiosityPatch& receiver, const RadiosityPatch& e
 	// 5. Compute cos(theta_j) with emitter.normal and the opposite direction.
 	// 6. Return 0 if either cosine is negative or zero.
 	// 7. Return emitter.area * cos(theta_i) * cos(theta_j) / (pi * r^2).
-	return 0.0f;
+
+	const Vec3 direction = emitter.center - receiver.center;
+	float r2 = direction.sqlength();
+	if (r2 <= 0.00001f)
+		return 0.0f;
+
+	const Vec3 directionNormalized = Vec3::normalize(direction);
+
+	const float cosThetaI = Vec3::dot(receiver.normal, directionNormalized);
+	const float cosThetaJ = Vec3::dot(emitter.normal, -1.0f * directionNormalized);
+
+	if (cosThetaI <= 0.0f || cosThetaJ <= 0.0f)
+		return 0.0f;
+	else{
+		float formFactor = emitter.area * cosThetaI * cosThetaJ / (pi * r2);
+		return formFactor;
+	}
 }
 
 } // namespace
@@ -183,7 +199,7 @@ bool RadiositySolver::visible(const Scene& scene,
 	(void)to;
 	(void)visibilityEpsilon;
 
-	// TODO: Test whether two patch centers can see each other.
+	// DONE: Test whether two patch centers can see each other.
 	//
 	// 1. Compute the segment from from.center to to.center.
 	// 2. Compute its length and return false if it is too small.
@@ -191,5 +207,23 @@ bool RadiositySolver::visible(const Scene& scene,
 	// 4. Start the ray at from.center + direction * visibilityEpsilon.
 	// 5. Intersect the ray with the scene.
 	// 6. The patches are visible if there is no hit before the target center.
-	return false;
+	// The patches are visible if the scene intersection is empty, or if the closest hit is farther away than the target center. If another object is hit before the target center, the two patches are occluded and the form factor should not contribute.
+
+	const Vec3 direction = to.center - from.center;
+	const float length = direction.length();
+	if (length <= 0.00001f)
+		return false;
+
+	const Vec3 directionNormalized = Vec3::normalize(direction);
+	const Ray ray(from.center + directionNormalized * visibilityEpsilon, directionNormalized);
+	const std::optional<Intersection> intersection = scene.intersect(ray);
+	
+	if (!intersection.has_value())
+		return true;
+
+    const float hitT = intersection->getT();
+    
+    const float distanceToTarget = length - visibilityEpsilon - 0.0001f;
+        
+    return hitT >= distanceToTarget;
 }

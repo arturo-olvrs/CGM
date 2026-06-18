@@ -23,4 +23,6 @@ The first scene is faster per ray than the Cornell box scene because, even thoug
 
 Since the first scene does not have any light source, the only way for a ray to contribute (to not return black) is to hit the environment, which is a large area light source, as the scene is not closed. This means that a random path has a high probability of actively contributing to the final image, leading to faster convergence. In contrast, the Cornell box is a closed geometry where rays must bounce multiple times and have a lower probability of reaching the light source directly, resulting in a lot of paths bouncing until the maximum depth is reached, therefore returning black and contributing to the noise, which slows down convergence.
 
+In addition, the more diffuse surfaces will likely scatter rays in random directions, which will produce more variance in the samples and therefore more noise. Since the Cornell box has more diffuse surfaces (specially the walls), this also contributes to the slower convergence compared to the first scene, which has more specular surfaces that can lead to more direct paths to the environment light.
+
 \end{document}

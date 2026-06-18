@@ -87,50 +87,56 @@ public:
     const auto addParameterSet = [this](const RescaleAndAddVolumeParameters& parameters) {
       parameterSets.emplace_back(parameters);
     };
+
+    const int reductionFactor = 1; // Adjust this factor to control the resolution of the generated volumes
     // Personal Parameter Sets 
-    addParameterSet({384, 160, 256, Vec3{1.0f, 1.0f, 1.0f},
+    addParameterSet({384/reductionFactor, 160/reductionFactor, 256/reductionFactor, Vec3{1.0f, 1.0f, 1.0f},
                  7777, 8, 1.75f, 2.15f, 0.48f, true,
                  0.42f, 1.10f, -0.05f, 1.6f,
                  0.65f, 0.28f, 2.1f, 0.45f, 0.40f, false});
+    addParameterSet({128, 128, 128, Vec3{1.0f, 1.0f, 1.0f},
+                    1337, 5, 2.5f, 2.1f, 0.45f, true,
+                    0.42f, 6.0f, -0.15f, 2.5f,
+                    0.75f, 0.40f, 1.8f, 0.35f, 0.55f, true});
 
     // Default Parameter Sets
-    addParameterSet({384, 160, 256, Vec3{1.0f, 1.0f, 1.0f},
+    addParameterSet({384/reductionFactor, 160/reductionFactor, 256/reductionFactor, Vec3{1.0f, 1.0f, 1.0f},
                      1337, 9, 2.1f, 2.0f, 0.54f, true,
                      0.38f, 0.75f, 0.0f, 1.15f,
                      0.56f, 0.12f, 2.4f, 0.28f, 0.22f, false});
-    addParameterSet({384, 160, 256, Vec3{1.0f, 1.0f, 1.0f},
+    addParameterSet({384/reductionFactor, 160/reductionFactor, 256/reductionFactor, Vec3{1.0f, 1.0f, 1.0f},
                      2491, 7, 1.6f, 2.1f, 0.58f, true,
                      0.34f, 0.82f, 0.0f, 1.00f,
                      0.60f, 0.16f, 1.8f, 0.38f, 0.30f, false});
-    addParameterSet({384, 160, 256, Vec3{1.0f, 1.0f, 1.0f},
+    addParameterSet({384/reductionFactor, 160/reductionFactor, 256/reductionFactor, Vec3{1.0f, 1.0f, 1.0f},
                      4073, 10, 2.8f, 1.9f, 0.50f, true,
                      0.42f, 0.70f, 0.0f, 1.25f,
                      0.55f, 0.10f, 3.2f, 0.45f, 0.36f, false});
-    addParameterSet({384, 160, 256, Vec3{1.0f, 1.0f, 1.0f},
+    addParameterSet({384/reductionFactor, 160/reductionFactor, 256/reductionFactor, Vec3{1.0f, 1.0f, 1.0f},
                      5281, 6, 1.2f, 2.3f, 0.62f, false,
                      0.30f, 0.78f, 0.0f, 1.10f,
                      0.62f, 0.18f, 1.5f, 0.32f, 0.18f, false});
-    addParameterSet({384, 160, 256, Vec3{1.0f, 1.0f, 1.0f},
+    addParameterSet({384/reductionFactor, 160/reductionFactor, 256/reductionFactor, Vec3{1.0f, 1.0f, 1.0f},
                      6899, 8, 3.4f, 2.0f, 0.48f, true,
                      0.46f, 0.88f, 0.0f, 1.35f,
                      0.52f, 0.08f, 4.0f, 0.55f, 0.42f, false});
-    addParameterSet({384, 160, 256, Vec3{1.0f, 1.0f, 1.0f},
+    addParameterSet({384/reductionFactor, 160/reductionFactor, 256/reductionFactor, Vec3{1.0f, 1.0f, 1.0f},
                      8123, 11, 1.9f, 2.0f, 0.57f, true,
                      0.36f, 0.72f, 0.0f, 0.95f,
                      0.58f, 0.14f, 2.8f, 0.50f, 0.28f, false});
-    addParameterSet({384, 160, 256, Vec3{1.0f, 1.0f, 1.0f},
+    addParameterSet({384/reductionFactor, 160/reductionFactor, 256/reductionFactor, Vec3{1.0f, 1.0f, 1.0f},
                      9349, 5, 0.95f, 2.4f, 0.65f, false,
                      0.28f, 0.68f, 0.0f, 1.05f,
                      0.64f, 0.22f, 1.2f, 0.25f, 0.12f, false});
-    addParameterSet({384, 160, 256, Vec3{1.0f, 1.0f, 1.0f},
+    addParameterSet({384/reductionFactor, 160/reductionFactor, 256/reductionFactor, Vec3{1.0f, 1.0f, 1.0f},
                      10657, 9, 2.5f, 2.15f, 0.52f, true,
                      0.40f, 0.80f, 0.0f, 1.45f,
                      0.57f, 0.11f, 3.6f, 0.62f, 0.34f, false});
-    addParameterSet({384, 160, 256, Vec3{1.0f, 1.0f, 1.0f},
+    addParameterSet({384/reductionFactor, 160/reductionFactor, 256/reductionFactor, Vec3{1.0f, 1.0f, 1.0f},
                      11831, 7, 1.45f, 2.0f, 0.60f, true,
                      0.32f, 0.92f, 0.0f, 0.90f,
                      0.61f, 0.20f, 2.1f, 0.42f, 0.26f, false});
-    addParameterSet({384, 160, 256, Vec3{1.0f, 1.0f, 1.0f},
+    addParameterSet({384/reductionFactor, 160/reductionFactor, 256/reductionFactor, Vec3{1.0f, 1.0f, 1.0f},
                      12799, 12, 3.0f, 1.85f, 0.46f, true,
                      0.44f, 0.76f, 0.0f, 1.20f,
                      0.54f, 0.09f, 4.8f, 0.68f, 0.48f, false});

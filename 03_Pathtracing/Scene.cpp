@@ -15,7 +15,7 @@ Vec3 transformDirection(const Mat4& matrix, const Vec3& direction) {
 }
 
 [[maybe_unused]] Vec3 sampleDiffuseDirection(const Vec3& normal) {
-	// TODO: Generate one random outgoing direction for a perfectly diffuse
+	// DONE: Generate one random outgoing direction for a perfectly diffuse
 	// material.
 	//
 	// A diffuse surface scatters light over the hemisphere above the surface
@@ -164,7 +164,7 @@ Vec3 Scene::traceLocalPath(const Ray& firstRay, int maxDepth) const {
 
 	for (int depth = 0; depth < maxDepth; ++depth)
 	{
-		// TODO: Trace one path bounce.
+		// DONE: Trace one path bounce.
 		//
 		// 1. Intersect the current ray with the scene, just as in the raytracer.
 		std::optional<Intersection> inter = intersect(ray);

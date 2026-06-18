@@ -27,7 +27,7 @@ void RescaleAndAddVolume::generate(const RescaleAndAddVolumeParameters& paramete
 
   std::fill(volume.data.begin(), volume.data.end(), uint8_t{0});
 
-  // TODO: Fill volume.data with cloud densities:
+  // DONE: Fill volume.data with cloud densities:
   // 1. Iterate over all voxels and map u/v/w to normalized coordinates x/y/z in [0, 1].
   // 2. Evaluate fractalNoise(x, y, z) for the rescale-and-add noise value.
   // 3. Evaluate cloudEnvelope(x, y, z) to fade the cloud near its boundary.
@@ -94,7 +94,7 @@ float RescaleAndAddVolume::fractalNoise(const float x, const float y, const floa
   (void)y;
   (void)z;
 
-  // TODO: Implement rescale-and-add noise:
+  // DONE: Implement rescale-and-add noise:
   // - Start with frequency = parameters.baseFrequency and amplitude = 1.
   // - For parameters.octaves iterations, sample perlin(x * frequency, ...).
   // - If parameters.billowyNoise is true, convert the octave to billowy noise
@@ -189,7 +189,7 @@ float RescaleAndAddVolume::cloudEnvelope(const float x, const float y, const flo
   (void)y;
   (void)z;
 
-  // TODO: Implement the cloud envelope:
+  // DONE: Implement the cloud envelope:
   // - Compute a noisy radius with perlin(...) and parameters.silhouetteNoiseFrequency.
   // - Measure the distance from the center of the volume.
   // - Use parameters.radius, silhouetteNoiseStrength, and envelopeSoftness to

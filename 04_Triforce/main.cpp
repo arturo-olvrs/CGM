@@ -21,19 +21,19 @@ private:
 
   constexpr static GLfloat triangles[numTriangles*3*3*2] = {
     // Botton left triangle. Magenta, blue, cyan
-    -2.0f, -sqrt3, 0.0f,    0.0f, 0.0f, 1.0f,
-     0.0f, -sqrt3, 0.0f,    0.0f, 1.0f, 1.0f,
-    -1.0f,   0.0f, 0.0f,    1.0f, 0.0f, 1.0f,
+    -sqrt3, -1.5, 0.0f,    0.0f, 0.0f, 1.0f,
+     0.0f, -1.5, 0.0f,    0.0f, 1.0f, 1.0f,
+    -sqrt3/2,   0.0f, 0.0f,    1.0f, 0.0f, 1.0f,
 
     // Bottom right triangle. Yellow, cyan, green
-     0.0f, -sqrt3, 0.0f,    0.0f, 1.0f, 1.0f,
-     2.0f, -sqrt3, 0.0f,    0.0f, 1.0f, 0.0f,
-     1.0f,   0.0f, 0.0f,    1.0f, 1.0f, 0.0f,
+     0.0f, -1.5, 0.0f,    0.0f, 1.0f, 1.0f,
+     sqrt3, -1.5f, 0.0f,    0.0f, 1.0f, 0.0f,
+     sqrt3/2,   0.0f, 0.0f,    1.0f, 1.0f, 0.0f,
 
     // Top triangle. Red, magenta, yellow
-    -1.0f,  0.0f, 0.0f,     1.0f, 0.0f, 1.0f,
-     1.0f,  0.0f, 0.0f,     1.0f, 1.0f, 0.0f,
-     0.0f, sqrt3, 0.0f,     1.0f, 0.0f, 0.0f
+    -sqrt3/2,  0.0f, 0.0f,     1.0f, 0.0f, 1.0f,
+     sqrt3/2,  0.0f, 0.0f,     1.0f, 1.0f, 0.0f,
+     0.0f, 1.5f, 0.0f,     1.0f, 0.0f, 0.0f
   };
 
 

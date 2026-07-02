@@ -276,7 +276,7 @@ void PhotonMapper::tracePhotonPath(const Vec3& origin, const Vec3& direction, co
     Ray ray{origin + direction * PHOTON_EPSILON, direction};
     Vec3 photonPower = power;
 
-    // TODO Task 1:
+    // DONE Task 1:
     // Trace one photon path through the scene.
     //
     // For every bounce:
@@ -296,12 +296,48 @@ void PhotonMapper::tracePhotonPath(const Vec3& origin, const Vec3& direction, co
     // self-intersections caused by floating point roundoff.
     for (int bounce = 0; bounce < photonTraceDepth && photons.size() < targetPhotonCount; ++bounce)
     {
-        // TODO: Implement one step of the photon random walk.
-    }
+        // DONE: Implement one step of the photon random walk.
 
-    (void)ray;
-    (void)photonPower;
-    (void)PHOTON_MIN_POWER_SQ;
+        std::optional<Intersection> intersection = scene.intersect(ray, false);
+        if (!intersection)
+            break;
+        
+        if (intersection->getMaterial().emits())
+            break;
+
+        Vec3 hitPosition = ray.getPosOnRay(intersection->getT());
+        Vec3 normal = intersection->getNormal();
+
+        Vec3 nextDirection;
+        Vec3 nextOrigin;
+
+        if (intersection->getMaterial().refracts()) {
+            float reflectivity = intersection->getMaterial().getReflectivity(Vec3::dot(ray.getDirection(), normal));
+            if (static_cast<float>(rand()) / RAND_MAX > reflectivity) {
+                std::optional<Vec3> refractDir = Vec3::refract(ray.getDirection(), normal, *intersection->getMaterial().getIndexOfRefraction());
+                if (refractDir) {
+                    nextDirection = *refractDir;
+                } else {
+                    // Total internal reflection, reflect the ray
+                    nextDirection = Vec3::reflect(ray.getDirection(), normal);
+                    photonPower = photonPower * intersection->getMaterial().getSpecular();
+                }
+            } else {
+                nextDirection = Vec3::reflect(ray.getDirection(), normal);
+                photonPower = photonPower * intersection->getMaterial().getSpecular();
+            }
+        } else if (intersection->getMaterial().reflects()) {
+            nextDirection = Vec3::reflect(ray.getDirection(), normal);
+            photonPower = photonPower * intersection->getMaterial().getSpecular();
+        } else {
+            storePhoton({hitPosition, photonPower, ray.getDirection(), normal});
+            nextDirection = sampleDiffuseDirection(normal);
+            photonPower = photonPower * intersection->getMaterial().getDiffuse();
+        }
+
+        nextOrigin = offsetRayOrigin(hitPosition, nextDirection, normal);
+        ray = Ray(nextOrigin, nextDirection);
+    }
 }
 
 void PhotonMapper::storePhoton(const Photon& photon)
@@ -313,7 +349,7 @@ void PhotonMapper::storePhoton(const Photon& photon)
 
 Vec3 PhotonMapper::estimatePhotonRadiance(const Ray& localRay, const Intersection& intersection) const
 {
-    // TODO Task 2:
+    // DONE Task 2:
     // Estimate the outgoing radiance at the surface point hit by localRay.
     //
     // 1. Return black if the photon map is empty.
@@ -331,11 +367,56 @@ Vec3 PhotonMapper::estimatePhotonRadiance(const Ray& localRay, const Intersectio
     //        diffuseColor * powerSum * (PHOTON_RADIANCE_SCALE / gatherArea)
     //
     //    with gatherArea = pi * r^2.
-    (void)localRay;
-    (void)intersection;
-    (void)PHOTON_MIN_NORMAL_DOT;
-    (void)PHOTON_RADIANCE_SCALE;
-    return {};
+
+    if (photons.empty())
+        return Vec3{0.0f};
+    Vec3 hitPosition = localRay.getPosOnRay(intersection.getT());
+
+    Vec3 minBounds = hitPosition - Vec3{PHOTON_GATHER_RADIUS};
+    Vec3 maxBounds = hitPosition + Vec3{PHOTON_GATHER_RADIUS};
+    int minX = static_cast<int>(std::floor(minBounds.x / PHOTON_GRID_CELL_SIZE));
+    int maxX = static_cast<int>(std::floor(maxBounds.x / PHOTON_GRID_CELL_SIZE));
+    int minY = static_cast<int>(std::floor(minBounds.y / PHOTON_GRID_CELL_SIZE));
+    int maxY = static_cast<int>(std::floor(maxBounds.y / PHOTON_GRID_CELL_SIZE));
+    int minZ = static_cast<int>(std::floor(minBounds.z / PHOTON_GRID_CELL_SIZE));
+    int maxZ = static_cast<int>(std::floor(maxBounds.z / PHOTON_GRID_CELL_SIZE));
+
+    Vec3 accumulatedPower = Vec3{0.0f};
+
+    for (int x = minX; x <= maxX; ++x) {
+        for (int y = minY; y <= maxY; ++y) {
+            for (int z = minZ; z <= maxZ; ++z) {
+                long long key = photonGridKey(x, y, z);
+                auto it = photonGrid.cells.find(key);
+                if (it != photonGrid.cells.end()) {
+                    const std::vector<size_t>& photonIndices = it->second;
+                    for (size_t index : photonIndices) {
+                        const Photon& photon = photons[index];
+                        Vec3 toPhoton = photon.position - hitPosition;
+                        float distanceSq = toPhoton.sqlength();
+                        if (distanceSq <= PHOTON_GATHER_RADIUS * PHOTON_GATHER_RADIUS) {
+                            float directionDot = Vec3::dot(photon.direction, intersection.getNormal());
+                            if (directionDot > 0.0f) {  // Arriving from the back side of the surface
+                                continue;
+                            }
+                            
+                            float normalDot = Vec3::dot(photon.normal, intersection.getNormal());
+                            if (normalDot < PHOTON_MIN_NORMAL_DOT) {    // Normals differ too much
+                                continue;
+                            }
+
+                            accumulatedPower = accumulatedPower + photon.power;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    float gatherArea = static_cast<float>(M_PI) * PHOTON_GATHER_RADIUS * PHOTON_GATHER_RADIUS;
+    Vec3 diffuseColor = getDiffuseColor(intersection);
+
+    return diffuseColor * accumulatedPower * (PHOTON_RADIANCE_SCALE / gatherArea);
 }
 
 void PhotonMapper::buildPhotonGrid()

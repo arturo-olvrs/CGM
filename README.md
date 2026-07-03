@@ -2,8 +2,8 @@
 
 Este repositorio contiene las prácticas, proyectos y algoritmos desarrollados durante mi estancia **Erasmus** en la **Universität Duisburg-Essen (UDE)**, correspondientes a la asignatura de nivel avanzado **Computer Graphics**. 
 
-Para ver los enunciados de los ejericios, vistar [esta web](https://www.cgvis.de/teaching/st2026/CGM/).
-
+- Para ver los enunciados de los ejericios, vistar [esta web](https://www.cgvis.de/teaching/st2026/CGM/).
+- Par ver la Teoría de la asignatura, visitar [LosDelDGIIM.github.io](www.LosDelDGIIM.github.io).
 
 El curso se enfoca en el estudio e implementación de técnicas de renderizado global (Global Illumination), física de la luz, gráficos volumétricos y optimización de imágenes de alto rendimiento.
 
